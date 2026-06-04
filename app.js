@@ -12,7 +12,6 @@ const thumb = document.getElementById('thumb');
 const dragRing = document.getElementById('drag-ring');
 const dragRingVis = document.getElementById('drag-ring-vis');
 const dialSvg = document.getElementById('dial-svg');
-const ringWrap = document.getElementById('ring-wrap');
 const badge = document.getElementById('badge');
 const badgeText = document.getElementById('badge-text');
 const timeDisplay = document.getElementById('time-display');
@@ -46,23 +45,26 @@ function updateThumb(ratio) {
   thumb.setAttribute('cy', (100 + 84 * Math.sin(rad)).toFixed(2));
 }
 
+function getAccent() {
+  return state === 'COMPLETE' ? '#1D9E75' : '#7F77DD';
+}
+
 function updateUI(instant = false) {
   const ratio = 1 - resource / total;
   const progress = Math.round(ratio * 100);
+  const accent = getAccent();
 
   ringArc.style.transition = instant ? 'none' : 'stroke-dashoffset 0.4s linear, stroke 0.3s';
   ringArc.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+  ringArc.style.stroke = accent;
   updateThumb(ratio);
-  timeDisplay.textContent = fmt(resource);
+  thumb.setAttribute('fill', accent);
+  dragRingVis.setAttribute('stroke', accent);
 
+  timeDisplay.textContent = fmt(resource);
   document.getElementById('p-trigger').textContent = state === 'IDLE' ? '0' : '1';
   document.getElementById('p-resource').textContent = resource + 's';
   document.getElementById('p-progress').textContent = progress + '%';
-
-  const accent = state === 'COMPLETE' ? '#1D9E75' : '#7F77DD';
-  ringArc.style.stroke = accent;
-  thumb.setAttribute('fill', accent);
-  dragRingVis.setAttribute('stroke', accent);
 
   if (state === 'IDLE') {
     badge.className = 'badge';
