@@ -4,16 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>집중 타이머</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css" />
-</head>
-<body>
-  <div class="wrap"><!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>집중 타이머</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -432,74 +422,5 @@ function setMode(el, mins) {
 
 ui(true);
 </script>
-</body>
-</html>
-
-    <div class="card">
-
-      <div class="card-header">
-        <div class="card-header-row">
-          <p class="card-title">집중 타이머</p>
-          <span class="badge" id="badge">
-            <span class="badge-dot"></span>
-            <span id="badge-text">IDLE</span>
-          </span>
-        </div>
-        <p class="card-desc">trigger · resource · progress · threshold</p>
-      </div>
-
-      <div class="tabs">
-        <button class="tab active" onclick="setMode(this, 25)">집중 25분</button>
-        <button class="tab" onclick="setMode(this, 10)">단기 10분</button>
-        <button class="tab" onclick="setMode(this, 5)">휴식 5분</button>
-      </div>
-
-      <div class="ring-section">
-        <div class="dial-hint">
-          <i class="ti ti-rotate-clockwise"></i>
-          <span id="hint-text">링을 드래그해서 시간 조절</span>
-        </div>
-
-        <div class="ring-wrap" id="ring-wrap">
-          <svg id="dial-svg" width="200" height="200" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="84" fill="none" stroke="#e5e7eb" stroke-width="12"/>
-            <circle id="drag-ring-vis" cx="100" cy="100" r="84" fill="none" stroke="#7F77DD" stroke-width="20" opacity="0"/>
-            <circle id="ring-arc" cx="100" cy="100" r="84" fill="none" stroke="#7F77DD" stroke-width="12"
-              stroke-linecap="round" stroke-dasharray="528" stroke-dashoffset="528"
-              transform="rotate(-90 100 100)"/>
-            <circle id="thumb" cx="100" cy="16" r="10" fill="#7F77DD" stroke="#ffffff" stroke-width="2.5" style="cursor:grab;"/>
-            <circle id="drag-ring" cx="100" cy="100" r="84" fill="none" stroke="transparent" stroke-width="36" style="cursor:grab;"/>
-          </svg>
-          <div class="ring-center">
-            <div class="time-main" id="time-display">25:00</div>
-            <div class="state-label" id="state-sub">대기 중</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button class="btn-primary" id="btn-trigger" onclick="handleTrigger()">
-          <i class="ti ti-player-play" id="btn-icon"></i>
-          <span id="btn-label">시작</span>
-        </button>
-        <button class="btn-ghost" id="btn-reset" onclick="handleReset()" disabled aria-label="리셋">
-          <i class="ti ti-refresh"></i>
-        </button>
-      </div>
-
-      <hr class="separator" />
-
-      <p class="props-label">추상화 속성</p>
-      <div class="props-grid">
-        <div class="prop-item"><span class="prop-key">trigger</span><span class="prop-value" id="p-trigger">0</span></div>
-        <div class="prop-item"><span class="prop-key">resource</span><span class="prop-value" id="p-resource">1500s</span></div>
-        <div class="prop-item"><span class="prop-key">consumeRate</span><span class="prop-value">1s / tick</span></div>
-        <div class="prop-item"><span class="prop-key">threshold</span><span class="prop-value">0s</span></div>
-        <div class="prop-item wide"><span class="prop-key">progress</span><span class="prop-value" id="p-progress">0%</span></div>
-      </div>
-
-    </div>
-  </div>
-  <script src="app.js"></script>
 </body>
 </html>
