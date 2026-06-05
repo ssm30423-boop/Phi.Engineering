@@ -1,378 +1,231 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>집중 타이머</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <title>Focus Timer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg-page:    #f3f4f6;
-      --bg-card:    #ffffff;
-      --bg-sub:     #f9fafb;
-      --text-1:     #111827;
-      --text-2:     #6b7280;
-      --text-3:     #9ca3af;
-      --border:     #e5e7eb;
-      --accent:     #7F77DD;
-      --accent-dk:  #5a52b8;
-      --green:      #1D9E75;
-      --radius-sm:  6px;
-      --radius-md:  8px;
-      --radius-lg:  16px;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .page {
+      min-height: 100vh; background: #f0ede8;
+      display: flex; align-items: center; justify-content: center; padding: 2rem;
     }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-page:  #111111;
-        --bg-card:  #1a1a1a;
-        --bg-sub:   #222222;
-        --text-1:   #f9fafb;
-        --text-2:   #9ca3af;
-        --text-3:   #6b7280;
-        --border:   #2e2e2e;
-      }
+    .device {
+      width: 300px; background: #f5f3ef; border-radius: 28px; padding: 20px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(0,0,0,0.06) inset,
+        0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
     }
-
-    body {
-      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg-page);
-      color: var(--text-1);
-      -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
+    .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 14px; }
+    .brand {
+      font-family: 'Pretendard Variable', Pretendard, sans-serif;
+      font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #999;
     }
-
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 2rem;
-      width: 100%;
-      max-width: 380px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.05);
+    .state-dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; transition: background 0.3s, box-shadow 0.3s; }
+    .state-dot.on   { background: #e8a020; box-shadow: 0 0 4px rgba(232,160,32,0.5); }
+    .state-dot.done { background: #4caf82; box-shadow: 0 0 4px rgba(76,175,130,0.5); }
+    .display {
+      background: #1a1a1a; border-radius: 16px; padding: 20px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.04);
     }
-
-    /* ── Header ── */
-    .header-row { display: flex; align-items: center; justify-content: space-between; }
-    .card-title { font-size: 16px; font-weight: 600; color: var(--text-1); }
-    .card-desc  { font-size: 12px; color: var(--text-3); margin-top: 4px; font-family: monospace; }
-
-    /* ── Badge ── */
-    .badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: 12px; font-weight: 500;
-      padding: 3px 10px; border-radius: 99px;
-      border: 1px solid var(--border);
-      color: var(--text-2);
-      background: var(--bg-sub);
-      transition: all 0.25s;
+    .dial-wrap { position: relative; width: 220px; height: 220px; margin: 0 auto; user-select: none; touch-action: none; }
+    .dial-wrap canvas { position: absolute; top: 0; left: 0; }
+    .dial-center {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px; pointer-events: none;
     }
-    .dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--text-3); flex-shrink: 0;
-      transition: background 0.25s;
+    .time-big {
+      font-family: 'Pretendard Variable', Pretendard, sans-serif;
+      font-size: 44px; font-weight: 200; letter-spacing: -1px;
+      font-variant-numeric: tabular-nums; color: #fff; line-height: 1;
     }
-    .badge.running { background: #EEEDFE; color: #3C3489; border-color: #AFA9EC; }
-    .badge.running .dot { background: #7F77DD; animation: blink 1s infinite; }
-    .badge.complete { background: #E1F5EE; color: #085041; border-color: #5DCAA5; }
-    .badge.complete .dot { background: #1D9E75; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-
-    /* ── Tabs ── */
-    .tabs {
-      display: grid; grid-template-columns: repeat(3,1fr);
-      background: var(--bg-sub);
-      border-radius: var(--radius-md);
-      padding: 3px; gap: 2px;
+    .state-small {
+      font-family: 'Pretendard Variable', Pretendard, sans-serif;
+      font-size: 9px; font-weight: 500; letter-spacing: 0.22em;
+      text-transform: uppercase; color: rgba(255,255,255,0.3);
     }
-    .tab {
-      font-size: 13px; font-weight: 500;
-      padding: 7px 0; text-align: center;
-      border-radius: var(--radius-sm);
-      cursor: pointer; color: var(--text-2);
-      border: none; background: transparent;
-      transition: all 0.15s;
-    }
-    .tab.active {
-      background: var(--bg-card);
-      color: var(--text-1);
-      border: 1px solid var(--border);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-
-    /* ── Ring ── */
-    .ring-section { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .dial-hint {
-      font-size: 11px; color: var(--text-3);
-      display: flex; align-items: center; gap: 5px;
+      font-family: 'Pretendard Variable', Pretendard, sans-serif;
+      font-size: 9px; letter-spacing: 0.1em; color: rgba(255,255,255,0.18);
+      text-align: center; margin-top: 10px; text-transform: uppercase;
     }
-    .ring-wrap {
-      position: relative; width: 200px; height: 200px;
-      user-select: none; touch-action: none;
+    .tabs { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 16px; }
+    .tab {
+      font-family: 'Pretendard Variable', Pretendard, sans-serif;
+      font-size: 11px; font-weight: 500; padding: 8px 0; text-align: center;
+      border-radius: 8px; cursor: pointer; color: #aaa;
+      border: 1px solid transparent; background: transparent; transition: all 0.15s; letter-spacing: 0.03em;
     }
-    .ring-wrap svg { position: absolute; top: 0; left: 0; }
-    .ring-center {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 4px; pointer-events: none;
-    }
-    .time-text {
-      font-size: 40px; font-weight: 500; letter-spacing: -1px;
-      font-variant-numeric: tabular-nums; color: var(--text-1);
-    }
-    .state-text {
-      font-size: 11px; color: var(--text-3);
-      text-transform: uppercase; letter-spacing: 0.08em;
-    }
-
-    /* ── Buttons ── */
-    .btn-row { display: flex; gap: 8px; }
-
-    .btn-main {
-      flex: 1;
+    .tab.active { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.1); }
+    .controls { margin-top: 16px; display: flex; gap: 10px; align-items: center; }
+    .btn-play {
+      flex: 1; height: 44px;
+      font-family: 'Pretendard Variable', Pretendard, sans-serif;
+      font-size: 13px; font-weight: 500; letter-spacing: 0.04em;
+      padding: 0; border-radius: 12px; border: none;
+      background: #1a1a1a; color: #fff; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      font-size: 14px; font-weight: 500;
-      padding: 11px 0;
-      border-radius: var(--radius-md);
-      border: 1px solid #111827;
-      background: #111827;
-      color: #ffffff;
-      cursor: pointer;
-      transition: opacity 0.15s;
+      transition: opacity 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
-    .btn-main:hover { opacity: 0.82; }
-
-    @media (prefers-color-scheme: dark) {
-      .btn-main { background: #f9fafb; color: #111827; border-color: #f9fafb; }
+    .btn-play:hover { opacity: 0.82; }
+    .btn-play svg { width: 13px; height: 13px; }
+    .btn-reset {
+      width: 44px; height: 44px; border-radius: 12px;
+      border: 1.5px solid #1a1a1a; background: #f5f3ef; color: #1a1a1a;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0;
     }
-
-    .btn-icon {
-      display: flex; align-items: center; justify-content: center;
-      width: 44px; height: 44px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text-2);
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-      flex-shrink: 0;
-    }
-    .btn-icon:hover { background: var(--bg-sub); color: var(--text-1); }
-    .btn-icon:disabled { opacity: 0.3; cursor: not-allowed; }
-    .btn-icon svg { width: 18px; height: 18px; }
-
-    /* ── Divider ── */
-    .divider { border: none; border-top: 1px solid var(--border); }
-
-    /* ── Props ── */
+    .btn-reset:hover { background: #e8e5df; }
+    .btn-reset:disabled { opacity: 0.22; cursor: not-allowed; }
+    .btn-reset svg { width: 16px; height: 16px; }
+    .sep { border: none; border-top: 1px solid #e5e2dc; margin: 12px 0 10px; }
     .props-label {
-      font-size: 11px; font-weight: 600; color: var(--text-3);
-      text-transform: uppercase; letter-spacing: 0.08em;
+      font-family: 'Pretendard Variable', Pretendard, sans-serif;
+      font-size: 9px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #bbb;
     }
-    .props-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .prop {
-      background: var(--bg-sub);
-      border-radius: var(--radius-md);
-      padding: 10px 12px;
-      display: flex; flex-direction: column; gap: 3px;
-    }
-    .prop.wide { grid-column: span 2; }
-    .prop-k { font-size: 11px; color: var(--text-3); font-family: monospace; }
-    .prop-v { font-size: 13px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
+    .props-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 10px; }
+    .prop-cell { background: #eceae5; border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+    .prop-cell.wide { grid-column: span 3; }
+    .prop-k { font-family: monospace; font-size: 9px; color: #bbb; letter-spacing: 0.04em; }
+    .prop-v { font-family: 'Pretendard Variable', Pretendard, sans-serif; font-size: 12px; font-weight: 600; color: #555; font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
-<div class="card">
 
-  <!-- Header -->
-  <div>
-    <div class="header-row">
-      <p class="card-title">집중 타이머</p>
-      <span class="badge" id="badge"><span class="dot"></span><span id="badge-text">IDLE</span></span>
-    </div>
-    <p class="card-desc">trigger · resource · progress · threshold</p>
+<div class="page">
+<div class="device">
+
+  <div class="top-bar">
+    <span class="brand">Focus Timer</span>
+    <span class="state-dot" id="sdot"></span>
   </div>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab active" onclick="setMode(this,25)">집중 25분</button>
-    <button class="tab" onclick="setMode(this,10)">단기 10분</button>
-    <button class="tab" onclick="setMode(this,5)">휴식 5분</button>
-  </div>
-
-  <!-- Ring -->
-  <div class="ring-section">
-    <div class="dial-hint">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 7.38 16.75"/><polyline points="16 17 21 17 21 22"/><path d="M12 22A10 10 0 0 1 4.62 5.25"/></svg>
-      <span id="hint-text">링을 드래그해서 시간 조절</span>
-    </div>
-    <div class="ring-wrap">
-      <svg id="dial-svg" width="200" height="200" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="84" fill="none" stroke="#e5e7eb" stroke-width="12"/>
-        <circle id="glow" cx="100" cy="100" r="84" fill="none" stroke="#7F77DD" stroke-width="22" opacity="0" transform="rotate(-90 100 100)"/>
-        <circle id="arc" cx="100" cy="100" r="84" fill="none" stroke="#7F77DD" stroke-width="12"
-          stroke-linecap="round" stroke-dasharray="528" stroke-dashoffset="528"
-          transform="rotate(-90 100 100)"/>
-        <circle id="thumb" cx="100" cy="16" r="10" fill="#7F77DD" stroke="#ffffff" stroke-width="3"/>
-        <circle id="hit" cx="100" cy="100" r="84" fill="none" stroke="transparent" stroke-width="36" style="cursor:grab"/>
-      </svg>
-      <div class="ring-center">
-        <div class="time-text" id="time-display">25:00</div>
-        <div class="state-text" id="state-sub">대기 중</div>
+  <div class="display">
+    <div class="dial-wrap">
+      <canvas id="cv"></canvas>
+      <div class="dial-center">
+        <div class="time-big" id="tdisp">25:00</div>
+        <div class="state-small" id="tsub">standby</div>
       </div>
     </div>
+    <div class="dial-hint" id="hint">rotate ring to set time</div>
+    <div class="tabs">
+      <button class="tab active" onclick="setMode(this,25)">25 min</button>
+      <button class="tab" onclick="setMode(this,10)">10 min</button>
+      <button class="tab" onclick="setMode(this,5)">5 min</button>
+    </div>
   </div>
 
-  <!-- Buttons -->
-  <div class="btn-row">
-    <button class="btn-main" id="btn-main" onclick="handleTrigger()">
-      <span id="btn-icon-wrap">
-        <!-- play icon -->
-        <svg id="ico" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      </span>
-      <span id="btn-label">시작</span>
+  <div class="controls">
+    <button class="btn-play" id="btnPlay" onclick="handleTrigger()">
+      <svg id="ico" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <span id="blabel">Start</span>
     </button>
-    <button class="btn-icon" id="btn-reset" onclick="handleReset()" disabled>
-      <!-- refresh icon -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+    <button class="btn-reset" id="btnReset" onclick="handleReset()" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <polyline points="1 20 1 14 7 14"/>
         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
       </svg>
     </button>
   </div>
 
-  <hr class="divider"/>
-
-  <!-- Props -->
-  <p class="props-label">추상화 속성</p>
-  <div class="props-grid">
-    <div class="prop"><span class="prop-k">trigger</span><span class="prop-v" id="p-trigger">0</span></div>
-    <div class="prop"><span class="prop-k">resource</span><span class="prop-v" id="p-resource">1500s</span></div>
-    <div class="prop"><span class="prop-k">consumeRate</span><span class="prop-v">1s / tick</span></div>
-    <div class="prop"><span class="prop-k">threshold</span><span class="prop-v">0s</span></div>
-    <div class="prop wide"><span class="prop-k">progress</span><span class="prop-v" id="p-progress">0%</span></div>
+  <hr class="sep"/>
+  <p class="props-label">Abstract properties</p>
+  <div class="props-row">
+    <div class="prop-cell"><span class="prop-k">trigger</span><span class="prop-v" id="pt">0</span></div>
+    <div class="prop-cell"><span class="prop-k">resource</span><span class="prop-v" id="pr">1500s</span></div>
+    <div class="prop-cell"><span class="prop-k">rate</span><span class="prop-v">1s/t</span></div>
+    <div class="prop-cell wide"><span class="prop-k">progress</span><span class="prop-v" id="pp">0%</span></div>
   </div>
 
 </div>
+</div>
 
 <script>
-const C = 2 * Math.PI * 84;
-let total = 25 * 60, resource = total, state = 'IDLE';
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const DPR = window.devicePixelRatio || 1;
+const SZ = 220;
+cv.width = SZ * DPR; cv.height = SZ * DPR;
+cv.style.width = SZ + 'px'; cv.style.height = SZ + 'px';
+ctx.scale(DPR, DPR);
+
+const CX = SZ/2, CY = SZ/2;
+const R_TRACK = 88, TRACK_W = 14;
+const R_TICK_OUT = 100, R_TICK_IN_LONG = 93, R_TICK_IN_SHORT = 96;
+const R_HIT = 88;
+
+let total = 25*60, resource = total, state = 'IDLE';
 let timer = null, dragging = false, lastAngle = null;
 
-const arc    = document.getElementById('arc');
-const glow   = document.getElementById('glow');
-const thumb  = document.getElementById('thumb');
-const hit    = document.getElementById('hit');
-const svg    = document.getElementById('dial-svg');
-const badge  = document.getElementById('badge');
-const btext  = document.getElementById('badge-text');
-const tdsp   = document.getElementById('time-display');
-const ssub   = document.getElementById('state-sub');
-const breset = document.getElementById('btn-reset');
-const blabel = document.getElementById('btn-label');
-const ico    = document.getElementById('ico');
-const hint   = document.getElementById('hint-text');
-
-arc.style.strokeDasharray = C;
-glow.style.strokeDasharray = C;
-
-const ICONS = {
-  play:  '<polygon points="5 3 19 12 5 21 5 3"/>',
-  pause: '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
-  replay:'<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>'
-};
-
-function setIcon(name) {
-  ico.innerHTML = ICONS[name];
-  ico.setAttribute('fill', name === 'pause' ? 'currentColor' : 'currentColor');
-  if (name === 'replay') { ico.setAttribute('fill','none'); ico.setAttribute('stroke','currentColor'); ico.setAttribute('stroke-width','2'); }
-  else { ico.removeAttribute('stroke'); ico.setAttribute('fill','currentColor'); }
-}
-
+function toRad(r) { return -Math.PI/2 + r * Math.PI * 2; }
 function fmt(s) {
   s = Math.max(0, Math.min(total, s));
-  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+function draw() {
+  ctx.clearRect(0, 0, SZ, SZ);
+  const ratio = 1 - resource/total;
+  const endA = toRad(ratio);
+
+  for (let i = 0; i < 60; i++) {
+    const a = -Math.PI/2 + (i/60) * Math.PI*2;
+    const isLong = i % 5 === 0;
+    const rIn = isLong ? R_TICK_IN_LONG : R_TICK_IN_SHORT;
+    const marked = i/60 <= ratio;
+    ctx.beginPath();
+    ctx.moveTo(CX + R_TICK_OUT * Math.cos(a), CY + R_TICK_OUT * Math.sin(a));
+    ctx.lineTo(CX + rIn * Math.cos(a),         CY + rIn * Math.sin(a));
+    ctx.strokeStyle = marked
+      ? (isLong ? '#e8a020' : 'rgba(232,160,32,0.6)')
+      : (isLong ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)');
+    ctx.lineWidth = isLong ? 2 : 1;
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.arc(CX, CY, R_TRACK, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = TRACK_W;
+  ctx.stroke();
+
+  if (ratio > 0) {
+    ctx.beginPath();
+    ctx.arc(CX, CY, R_TRACK, -Math.PI/2, endA);
+    ctx.strokeStyle = state === 'COMPLETE' ? '#4caf82' : '#e8a020';
+    ctx.lineWidth = TRACK_W;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
+
+  const tx = CX + R_TRACK * Math.cos(endA);
+  const ty = CY + R_TRACK * Math.sin(endA);
+  ctx.beginPath(); ctx.arc(tx, ty, 8, 0, Math.PI*2);
+  ctx.fillStyle = state === 'COMPLETE' ? '#4caf82' : '#e8a020';
+  ctx.fill();
+  ctx.beginPath(); ctx.arc(tx, ty, 8, 0, Math.PI*2);
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(tx-2, ty-2, 3, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill();
 }
 
 function getAngle(e) {
-  const r = svg.getBoundingClientRect();
-  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  const r = cv.getBoundingClientRect();
   const px = e.touches ? e.touches[0].clientX : e.clientX;
   const py = e.touches ? e.touches[0].clientY : e.clientY;
-  return (Math.atan2(py - cy, px - cx) * 180/Math.PI + 90 + 360) % 360;
+  return (Math.atan2(py - r.top - CY, px - r.left - CX) * 180/Math.PI + 90 + 360) % 360;
 }
-
-function moveThumb(ratio) {
-  const a = ratio * 360 - 90, rad = a * Math.PI/180;
-  thumb.setAttribute('cx', (100 + 84*Math.cos(rad)).toFixed(2));
-  thumb.setAttribute('cy', (100 + 84*Math.sin(rad)).toFixed(2));
+function nearRing(e) {
+  const r = cv.getBoundingClientRect();
+  const px = e.touches ? e.touches[0].clientX : e.clientX;
+  const py = e.touches ? e.touches[0].clientY : e.clientY;
+  const d = Math.sqrt((px - r.left - CX)**2 + (py - r.top - CY)**2);
+  return d >= R_HIT - 20 && d <= R_HIT + 20;
 }
-
-function ui(instant) {
-  const ratio    = 1 - resource/total;
-  const progress = Math.round(ratio * 100);
-  const accent   = state === 'COMPLETE' ? '#1D9E75' : '#7F77DD';
-
-  arc.style.transition = instant ? 'none' : 'stroke-dashoffset 0.35s linear';
-  arc.style.strokeDashoffset = C * (1 - ratio);
-  arc.setAttribute('stroke', accent);
-  glow.setAttribute('stroke', accent);
-  glow.style.strokeDashoffset = C * (1 - ratio);
-  thumb.setAttribute('fill', accent);
-  moveThumb(ratio);
-
-  tdsp.textContent = fmt(resource);
-  document.getElementById('p-trigger').textContent  = state === 'IDLE' ? '0' : '1';
-  document.getElementById('p-resource').textContent = resource + 's';
-  document.getElementById('p-progress').textContent = progress + '%';
-
-  if (state === 'IDLE') {
-    badge.className = 'badge';
-    btext.textContent = 'IDLE';
-    ssub.textContent  = resource < total ? '일시정지' : '대기 중';
-    setIcon('play');
-    blabel.textContent = resource < total ? '재개' : '시작';
-    breset.disabled    = resource === total;
-    hint.textContent   = '링을 드래그해서 시간 조절';
-  } else if (state === 'RUNNING') {
-    badge.className = 'badge running';
-    btext.textContent = 'RUNNING';
-    ssub.textContent  = dragging ? '조절 중' : '집중 중';
-    setIcon('pause');
-    blabel.textContent = '일시정지';
-    breset.disabled    = false;
-    hint.textContent   = '타이머 작동 중에도 조절 가능';
-  } else {
-    badge.className = 'badge complete';
-    btext.textContent = 'COMPLETE';
-    ssub.textContent  = '완료!';
-    setIcon('replay');
-    blabel.textContent = '다시 시작';
-    breset.disabled    = false;
-    hint.textContent   = '링을 드래그해서 시간 조절';
-  }
-}
-
-// ── 드래그 ──
-function dragStart(e) {
-  e.preventDefault();
-  dragging = true; lastAngle = getAngle(e);
-  glow.style.opacity = '0.07';
-  hit.style.cursor = thumb.style.cursor = 'grabbing';
-}
-function dragMove(e) {
-  if (!dragging) return; e.preventDefault();
+function applyDrag(e) {
   const a = getAngle(e);
   let d = a - lastAngle;
   if (d > 180) d -= 360; if (d < -180) d += 360;
@@ -380,39 +233,82 @@ function dragMove(e) {
   const prev = resource;
   resource = Math.max(0, Math.min(total, resource - Math.round(d * total/360)));
   if (state === 'COMPLETE' && resource > 0) { state = 'RUNNING'; timer = setInterval(tick, 1000); }
-  if (resource !== prev) { breset.disabled = false; ui(true); }
-}
-function dragEnd() {
-  dragging = false;
-  glow.style.opacity = '0';
-  hit.style.cursor = thumb.style.cursor = 'grab';
-  if (state === 'RUNNING') ssub.textContent = '집중 중';
+  if (resource !== prev) { document.getElementById('btnReset').disabled = false; ui(); }
 }
 
-hit.addEventListener('mousedown',   dragStart);
-thumb.addEventListener('mousedown', dragStart);
-window.addEventListener('mousemove',  dragMove);
-window.addEventListener('mouseup',    dragEnd);
-hit.addEventListener('touchstart',   dragStart, { passive: false });
-thumb.addEventListener('touchstart', dragStart, { passive: false });
-window.addEventListener('touchmove',  dragMove, { passive: false });
-window.addEventListener('touchend',   dragEnd);
+cv.addEventListener('mousedown', e => { if (!nearRing(e)) return; e.preventDefault(); dragging = true; lastAngle = getAngle(e); cv.style.cursor = 'grabbing'; });
+cv.addEventListener('touchstart', e => { if (!nearRing(e)) return; e.preventDefault(); dragging = true; lastAngle = getAngle(e); }, { passive: false });
+window.addEventListener('mousemove', e => { if (dragging) applyDrag(e); });
+window.addEventListener('touchmove', e => { if (dragging) { e.preventDefault(); applyDrag(e); } }, { passive: false });
+window.addEventListener('mouseup', () => { dragging = false; cv.style.cursor = 'default'; });
+window.addEventListener('touchend', () => { dragging = false; });
+cv.addEventListener('mousemove', e => { cv.style.cursor = nearRing(e) ? 'grab' : 'default'; });
 
-// ── 타이머 ──
+const ICONS = {
+  play:  '<polygon points="5 3 19 12 5 21 5 3"/>',
+  pause: '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
+  redo:  '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/>'
+};
+
+function ui() {
+  draw();
+  const pct = Math.round((1 - resource/total) * 100);
+  document.getElementById('tdisp').textContent = fmt(resource);
+  document.getElementById('pt').textContent = state === 'IDLE' ? '0' : '1';
+  document.getElementById('pr').textContent = resource + 's';
+  document.getElementById('pp').textContent = pct + '%';
+
+  const ico = document.getElementById('ico');
+  const sdot = document.getElementById('sdot');
+  const tsub = document.getElementById('tsub');
+  const blabel = document.getElementById('blabel');
+  const hint = document.getElementById('hint');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnReset = document.getElementById('btnReset');
+
+  if (state === 'IDLE') {
+    sdot.className = 'state-dot';
+    tsub.textContent = resource < total ? 'paused' : 'standby';
+    ico.innerHTML = ICONS.play; ico.setAttribute('fill','currentColor'); ico.removeAttribute('stroke');
+    blabel.textContent = resource < total ? 'Resume' : 'Start';
+    btnPlay.style.background = '#1a1a1a'; btnPlay.style.color = '#fff';
+    btnReset.style.borderColor = '#1a1a1a'; btnReset.style.color = '#1a1a1a';
+    btnReset.disabled = resource === total;
+    hint.textContent = 'rotate ring to set time';
+  } else if (state === 'RUNNING') {
+    sdot.className = 'state-dot on';
+    tsub.textContent = dragging ? 'adjusting' : 'focus';
+    ico.innerHTML = ICONS.pause; ico.setAttribute('fill','currentColor'); ico.removeAttribute('stroke');
+    blabel.textContent = 'Pause';
+    btnPlay.style.background = '#1a1a1a'; btnPlay.style.color = '#fff';
+    btnReset.style.borderColor = '#1a1a1a'; btnReset.style.color = '#1a1a1a';
+    btnReset.disabled = false;
+    hint.textContent = 'drag to adjust while running';
+  } else {
+    sdot.className = 'state-dot done';
+    tsub.textContent = 'complete';
+    ico.innerHTML = ICONS.redo; ico.setAttribute('fill','none'); ico.setAttribute('stroke','currentColor'); ico.setAttribute('stroke-width','2');
+    blabel.textContent = 'Restart';
+    btnPlay.style.background = '#4caf82'; btnPlay.style.color = '#fff';
+    btnReset.style.borderColor = '#4caf82'; btnReset.style.color = '#4caf82';
+    btnReset.disabled = false;
+    hint.textContent = 'rotate ring to set time';
+  }
+}
+
 function tick() {
   if (dragging) return;
-  if (resource <= 0) { clearInterval(timer); timer = null; resource = 0; state = 'COMPLETE'; ui(false); return; }
-  resource -= 1; ui(false);
+  if (resource <= 0) { clearInterval(timer); timer = null; resource = 0; state = 'COMPLETE'; ui(); return; }
+  resource -= 1; ui();
 }
 function handleTrigger() {
   if (state === 'IDLE')         { state = 'RUNNING'; timer = setInterval(tick, 1000); }
   else if (state === 'RUNNING') { clearInterval(timer); timer = null; state = 'IDLE'; }
   else                          { handleReset(); return; }
-  ui(false);
+  ui();
 }
 function handleReset() {
-  clearInterval(timer); timer = null; dragging = false;
-  state = 'IDLE'; resource = total; ui(false);
+  clearInterval(timer); timer = null; dragging = false; state = 'IDLE'; resource = total; ui();
 }
 function setMode(el, mins) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -420,7 +316,7 @@ function setMode(el, mins) {
   if (state !== 'RUNNING') { total = mins*60; resource = total; handleReset(); }
 }
 
-ui(true);
+ui();
 </script>
 </body>
 </html>
